@@ -1,20 +1,31 @@
 const mongoose = require("mongoose");
 
+let isConnected = false;
+
 async function connectDB() {
+  if (isConnected) {
+    console.log("⚡ Already connected to MongoDB");
+    return;
+  }
+
+  try {
     const uri = process.env.MONGODB_URI;
 
     if (!uri) {
-        console.error("❌ MONGODB_URI is undefined. Please check your .env file.");
-        process.exit(1);
+      throw new Error("MONGODB_URI is missing from Environment Variables!");
     }
 
-    try {
-        const conn = await mongoose.connect(uri);
-        console.log(`✅ MongoDB connected: ${conn.connection.host}`);
-    } catch (err) {
-        console.error("❌ Error connecting to MongoDB:", err.message);
-        process.exit(1);
-    }
+    const conn = await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    isConnected = conn.connections[0].readyState;
+    console.log("✅ MongoDB Connected on Vercel");
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err.message);
+    // DO NOT EXIT PROCESS — breaks serverless functions
+  }
 }
 
 module.exports = connectDB;
